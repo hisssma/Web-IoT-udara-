@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <!-- Styles CSS -->
+  <link rel="stylesheet" href="css/styles.css" />
+  <title>Hismaka | Am IOT Monitoring Udara</title>
+</head>
+
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="navbar-logo">Monitoring Udara</div>
+      <div class="navbar-menu" id="navbarMenu">
+        <a href="/" class="navbar-item">Home</a>
+        <a href="#" class="navbar-item">About</a>
+        <a href="#" class="navbar-item">Services</a>
+        <a href="#" class="navbar-item">Contact</a>
+      </div>
+      <div class="navbar-toggle" id="navbarToggle">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Prototype Monitoring Udara</h1>
+    <section class="card-container">
+      <div class="card">
+        <img src="img/icons8-pump-100.png" id="imgPump" alt="Card Image" class="card-image" />
+        <div class="card-content">
+          <h3 class="card-title">Pompa Air</h3>
+          <p class="card-description">
+            Mengontrol Pompa Air Nilai MQ135
+          </p>
+          <button class="card-btn" onclick="setRelayPompa()" id="btnPump">
+            Matikan
+          </button>
+        </div>
+      </div>
+      <div class="card">
+        <img src="img/fan1.png" id="imgFan" alt="Card Image" class="card-image" />
+        <div class="card-content">
+          <h3 class="card-title">MiniFan</h3>
+          <p class="card-description">
+            Mengontrol Kipas Angin
+          </p>
+          <button class="card-btn" onclick="setRelayKipas()" id="btnFan">
+            Matikan
+          </button>
+        </div>
+      </div>
+    </section>
+    <h1>Monitoring Data Sensor</h1>
+    <section class="card-container">
+      <div class="card-graph">
+        <canvas id="myChart" width="400" height="200"></canvas>
+      </div>
+      <!-- <div id="dataDisplay"></div> -->
+    </section>
+  </main>
+
+  <!-- Main Js -->
+  <script src="main.js"></script>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+  <script src="chart.js"></script>
+  <script>
+    const labels = [];
+    const dataSensorCO = [];
+    const dataSensorCO2 = [];
+    const dataSensorDHT = [];
+
+    const ctx = document.getElementById("myChart").getContext("2d");
+    const myChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label:"CO",
+            data: dataSensorCO,
+            borderColor: "red",
+            borderWidth: 1,
+            fill: false,
+          },
+          {
+            label: "CO2",
+            data: dataSensorCO2,
+            borderColor: "blue",
+            borderWidth: 1,
+            fill: false,
+          },
+          {
+            label: "Temperature",
+            data: dataSensorDHT,
+            borderColor: "green",
+            borderWidth: 1,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      },
+    });
+
+    function fetchSensorData() {
+      fetch(`${url}/sendDataArduino`)
+        .then((res) => res.text())
+        .then((dt) => {
+          const datas = dt.split("_");
+          console.log(datas);
+
+          if (datas.length === 3) {
+            const sensorCO = parseFloat(datas[0]);
+            const sensorCO2 = parseFloat(datas[1]);
+            const sensorDHT = parseFloat(datas[2]);
+
+            dataSensorCO.push(sensorCO);
+            dataSensorCO2.push(sensorCO2);
+            dataSensorDHT.push(sensorDHT);
+            labels.push(new Date().toLocaleTimeString());
+
+            if (dataSensorCO.length > 5) {
+              dataSensorCO.shift();
+              dataSensorCO2.shift();
+              dataSensorDHT.shift();
+              labels.shift();
+            }
+
+            // for (let i = 0; i < dataSensor.length; i++) {
+            //   myChart.data.datasets[0].data[i]
+            // }
+            myChart.update();
+          }
+        })
+        .catch((error) => console.error("Error fetching data:", error));
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      setInterval(function () {
+        fetchSensorData();
+      }, 7000);
+    })
+  </script>
+</body>
+
+</html>
